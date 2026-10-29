@@ -11,6 +11,9 @@ import { fileURLToPath } from "node:url";
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const SCRIPT = join(ROOT, "scripts", "ai-conflict-buttons-comment.sh");
 
+// The script builds the POST payload with `jq`, so the posting test needs it.
+const hasJq = spawnSync("jq", ["--version"]).status === 0;
+
 // Fake `gh`: logs every call, answers by argument shape, saves stdin of POST/PATCH.
 const GH_STUB = `#!/usr/bin/env bash
 echo "$*" >> "$GH_LOG"
@@ -54,7 +57,7 @@ function run({ state = "dirty", commentId = "", omit = [], extra = {} } = {}) {
   }
 }
 
-test("posts the conflict comment for a conflicting PR", () => {
+test("posts the conflict comment for a conflicting PR", { skip: !hasJq && "jq not installed" }, () => {
   const r = run();
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.log, /--method POST repos\/acme\/flisk\/issues\/2365\/comments/);
